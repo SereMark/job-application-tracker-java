@@ -20,7 +20,8 @@ RUN ./mvnw --batch-mode --no-transfer-progress clean package -DskipTests \
 FROM eclipse-temurin:${JAVA_VERSION}-jre-alpine AS runtime
 WORKDIR /application
 
-RUN addgroup -S application \
+RUN apk upgrade --no-cache \
+    && addgroup -S application \
     && adduser -S application -G application
 
 ENV SERVER_PORT=8080
