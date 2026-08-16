@@ -46,6 +46,9 @@ On Linux or macOS:
 ./mvnw clean verify
 ```
 
+The `verify` phase runs unit tests and `*IT` integration tests. The integration suite starts an
+isolated PostgreSQL container automatically, so Docker must be running.
+
 ## Format Java sources
 
 ```powershell
