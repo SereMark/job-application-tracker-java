@@ -5,6 +5,7 @@ import static io.github.seremark.jobapplicationtracker.applications.domain.JobAp
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplication;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationDetails;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationStatus;
+import org.springframework.data.domain.Page;
 
 final class JobApplicationMapper {
 
@@ -42,5 +43,14 @@ final class JobApplicationMapper {
         application.getNextActionDueAt(),
         application.getCreatedAt(),
         application.getUpdatedAt());
+  }
+
+  static PagedJobApplicationsResponse toPagedResponse(Page<JobApplication> applications) {
+    return new PagedJobApplicationsResponse(
+        applications.getContent().stream().map(JobApplicationMapper::toResponse).toList(),
+        applications.getNumber() + 1,
+        applications.getSize(),
+        applications.getTotalElements(),
+        applications.getTotalPages());
   }
 }

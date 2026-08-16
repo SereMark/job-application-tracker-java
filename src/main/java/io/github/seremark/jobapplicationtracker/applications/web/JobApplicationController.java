@@ -13,10 +13,13 @@ import java.net.URI;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,6 +81,36 @@ public class JobApplicationController {
         response.positionTitle());
 
     return ResponseEntity.created(location).body(response);
+  }
+
+  @GetMapping
+  @Operation(
+      summary = "Query job applications",
+      description =
+          "Searches company names and position titles and supports status, source, application "
+              + "date, and next-action filters. Results are paged and can only be sorted by "
+              + "updatedAt, createdAt, companyName, positionTitle, appliedOn, or nextActionDueAt "
+              + "in asc or desc direction.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Job applications returned",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = PagedJobApplicationsResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Query validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class)))
+  })
+  public ResponseEntity<PagedJobApplicationsResponse> query(
+      @Valid @ParameterObject @ModelAttribute GetJobApplicationsQuery query) {
+    Page<JobApplication> applications = jobApplicationService.query(query.toServiceQuery());
+    return ResponseEntity.ok(JobApplicationMapper.toPagedResponse(applications));
   }
 
   @GetMapping("/{id}")

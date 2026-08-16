@@ -13,6 +13,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,15 @@ class JobApplicationTrackerApplicationIT extends PostgreSqlIntegrationTest {
             jdbcTemplate.queryForObject("SELECT current_setting('server_version')", String.class))
         .isEqualTo("18.4");
     assertThat(currentMigration).isNotNull();
-    assertThat(currentMigration.getVersion().getVersion()).isEqualTo("1");
+    assertThat(currentMigration.getVersion().getVersion()).isEqualTo("2");
+    assertThat(
+            jdbcTemplate.queryForList(
+                "SELECT indexname FROM pg_indexes WHERE schemaname = 'public'", String.class))
+        .containsAll(
+            List.of(
+                "ix_job_applications_updated_at",
+                "ix_job_applications_source_updated_at",
+                "ix_job_applications_applied_on"));
     assertThat(clock).isSameAs(testClock);
     assertThat(clock.instant()).isEqualTo(DEFAULT_TEST_INSTANT);
 
