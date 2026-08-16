@@ -1,5 +1,6 @@
 package io.github.seremark.jobapplicationtracker.platform.web;
 
+import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationNotFoundException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -7,12 +8,14 @@ import java.util.Map;
 import java.util.Objects;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.method.ParameterErrors;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -22,6 +25,18 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
   private static final String GENERAL_ERROR_KEY = "request";
+
+  @ExceptionHandler(JobApplicationNotFoundException.class)
+  ResponseEntity<Object> handleJobApplicationNotFound(
+      JobApplicationNotFoundException exception, WebRequest request) {
+    ProblemDetail problemDetail =
+        createProblemDetail(
+            exception, HttpStatus.NOT_FOUND, exception.getMessage(), null, null, request);
+    problemDetail.setTitle("Job application not found");
+
+    return handleExceptionInternal(
+        exception, problemDetail, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+  }
 
   @Override
   protected ResponseEntity<Object> handleMethodArgumentNotValid(
