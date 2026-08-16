@@ -3,9 +3,11 @@ package io.github.seremark.jobapplicationtracker.applications.service;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplication;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationDetails;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationStatus;
+import io.github.seremark.jobapplicationtracker.applications.domain.StatusChange;
 import io.github.seremark.jobapplicationtracker.applications.persistence.JobApplicationRepository;
 import io.github.seremark.jobapplicationtracker.applications.persistence.JobApplicationSpecifications;
 import java.time.Clock;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.domain.Page;
@@ -33,19 +35,30 @@ public class JobApplicationService {
 
   @Transactional(readOnly = true)
   public JobApplication getById(UUID id) {
-    return jobApplicationRepository
-        .findById(id)
-        .orElseThrow(() -> new JobApplicationNotFoundException(id));
+    return requireById(id);
   }
 
   @Transactional
   public JobApplication update(UUID id, JobApplicationDetails details) {
-    JobApplication application =
-        jobApplicationRepository
-            .findById(id)
-            .orElseThrow(() -> new JobApplicationNotFoundException(id));
+    JobApplication application = requireById(id);
     application.updateDetails(details, clock);
     return application;
+  }
+
+  @Transactional
+  public JobApplication changeStatus(UUID id, JobApplicationStatus newStatus, String note) {
+    JobApplication application = requireById(id);
+
+    if (!application.changeStatus(newStatus, note, clock)) {
+      throw new JobApplicationStatusConflictException(id, newStatus);
+    }
+
+    return application;
+  }
+
+  @Transactional(readOnly = true)
+  public List<StatusChange> getStatusHistory(UUID id) {
+    return requireById(id).getStatusHistory();
   }
 
   @Transactional(readOnly = true)
@@ -84,5 +97,11 @@ public class JobApplicationService {
         };
 
     return Sort.by(direction, primaryProperty).and(Sort.by(direction, idProperty));
+  }
+
+  private JobApplication requireById(UUID id) {
+    return jobApplicationRepository
+        .findById(id)
+        .orElseThrow(() -> new JobApplicationNotFoundException(id));
   }
 }

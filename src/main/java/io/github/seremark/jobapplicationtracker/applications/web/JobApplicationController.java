@@ -3,6 +3,7 @@ package io.github.seremark.jobapplicationtracker.applications.web;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplication;
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -171,5 +174,77 @@ public class JobApplicationController {
     JobApplication application =
         jobApplicationService.update(id, JobApplicationMapper.toDetails(request));
     return ResponseEntity.ok(JobApplicationMapper.toResponse(application));
+  }
+
+  @PatchMapping("/{id}/status")
+  @Operation(
+      summary = "Change a job application status",
+      description =
+          "Changes the current status and records the transition in status history. Changing "
+              + "to the current status returns a conflict response.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Job application status changed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = JobApplicationResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Request validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Job application not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class))),
+    @ApiResponse(
+        responseCode = "409",
+        description = "Job application already has the requested status",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class)))
+  })
+  public ResponseEntity<JobApplicationResponse> changeStatus(
+      @PathVariable UUID id, @Valid @RequestBody ChangeJobApplicationStatusRequest request) {
+    JobApplication application =
+        jobApplicationService.changeStatus(id, request.status(), request.note());
+    return ResponseEntity.ok(JobApplicationMapper.toResponse(application));
+  }
+
+  @GetMapping("/{id}/status-history")
+  @Operation(
+      summary = "Get job application status history",
+      description = "Returns the initial status and every later transition in chronological order.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Job application status history returned",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                array =
+                    @ArraySchema(schema = @Schema(implementation = StatusChangeResponse.class)))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Job application not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class)))
+  })
+  public ResponseEntity<List<StatusChangeResponse>> getStatusHistory(@PathVariable UUID id) {
+    List<StatusChangeResponse> history =
+        jobApplicationService.getStatusHistory(id).stream()
+            .map(change -> JobApplicationMapper.toResponse(change))
+            .toList();
+    return ResponseEntity.ok(history);
   }
 }

@@ -1,6 +1,7 @@
 package io.github.seremark.jobapplicationtracker.platform.web;
 
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationNotFoundException;
+import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationStatusConflictException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +37,18 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     return handleExceptionInternal(
         exception, problemDetail, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+  }
+
+  @ExceptionHandler(JobApplicationStatusConflictException.class)
+  ResponseEntity<Object> handleJobApplicationStatusConflict(
+      JobApplicationStatusConflictException exception, WebRequest request) {
+    ProblemDetail problemDetail =
+        createProblemDetail(
+            exception, HttpStatus.CONFLICT, exception.getMessage(), null, null, request);
+    problemDetail.setTitle("Job application status conflict");
+
+    return handleExceptionInternal(
+        exception, problemDetail, new HttpHeaders(), HttpStatus.CONFLICT, request);
   }
 
   @Override
