@@ -5,8 +5,25 @@ A Spring Boot REST API for managing job applications, follow-up actions, and sta
 ## Requirements
 
 - Java 21
+- Docker Desktop or Docker Engine with Docker Compose
 
 A global Maven installation is not required because the repository includes the Maven Wrapper.
+
+## Local database
+
+Copy `.env.example` to `.env`, set a strong local-only password, then start PostgreSQL:
+
+```powershell
+Copy-Item .env.example .env
+# Edit .env and set POSTGRES_PASSWORD before continuing.
+docker compose up -d --wait postgres
+```
+
+PostgreSQL is exposed only on `127.0.0.1`. Stop the container without deleting its data:
+
+```powershell
+docker compose down
+```
 
 ## Build and verify
 
