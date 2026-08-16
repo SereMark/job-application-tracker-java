@@ -6,6 +6,8 @@ import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicati
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationDetails;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationStatus;
 import io.github.seremark.jobapplicationtracker.applications.domain.StatusChange;
+import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationSummary;
+import java.util.List;
 import org.springframework.data.domain.Page;
 
 final class JobApplicationMapper {
@@ -75,5 +77,20 @@ final class JobApplicationMapper {
         change.getNewStatus(),
         change.getChangedAt(),
         change.getNote());
+  }
+
+  static ApplicationSummaryResponse toResponse(JobApplicationSummary summary) {
+    List<ApplicationStatusCountResponse> statusCounts =
+        summary.statusCounts().stream()
+            .map(
+                statusCount ->
+                    new ApplicationStatusCountResponse(statusCount.status(), statusCount.count()))
+            .toList();
+
+    return new ApplicationSummaryResponse(
+        summary.totalCount(),
+        statusCounts,
+        summary.overdueNextActionCount(),
+        summary.nextActionDueWithinSevenDaysCount());
   }
 }

@@ -6,8 +6,14 @@ import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicati
 import io.github.seremark.jobapplicationtracker.applications.domain.StatusChange;
 import io.github.seremark.jobapplicationtracker.applications.persistence.JobApplicationRepository;
 import io.github.seremark.jobapplicationtracker.applications.persistence.JobApplicationSpecifications;
+import io.github.seremark.jobapplicationtracker.applications.persistence.JobApplicationSummaryRow;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.domain.Page;
@@ -18,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class JobApplicationService {
+
+  private static final long SUMMARY_WINDOW_DAYS = 7;
 
   private final JobApplicationRepository jobApplicationRepository;
   private final Clock clock;
@@ -64,6 +72,35 @@ public class JobApplicationService {
   @Transactional
   public void delete(UUID id) {
     jobApplicationRepository.delete(requireById(id));
+  }
+
+  @Transactional(readOnly = true)
+  public JobApplicationSummary getSummary() {
+    Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
+    Instant windowEnd = now.plus(SUMMARY_WINDOW_DAYS, ChronoUnit.DAYS);
+    List<JobApplicationSummaryRow> rows =
+        jobApplicationRepository.summarizeByStatus(now, windowEnd);
+
+    Map<JobApplicationStatus, Long> countsByStatus = new EnumMap<>(JobApplicationStatus.class);
+    long totalCount = 0;
+    long overdueNextActionCount = 0;
+    long nextActionDueWithinSevenDaysCount = 0;
+
+    for (JobApplicationSummaryRow row : rows) {
+      countsByStatus.put(row.status(), row.totalCount());
+      totalCount += row.totalCount();
+      overdueNextActionCount += row.overdueNextActionCount();
+      nextActionDueWithinSevenDaysCount += row.nextActionDueWithinSevenDaysCount();
+    }
+
+    List<JobApplicationSummary.StatusCount> statusCounts = new ArrayList<>();
+    for (JobApplicationStatus status : JobApplicationStatus.values()) {
+      statusCounts.add(
+          new JobApplicationSummary.StatusCount(status, countsByStatus.getOrDefault(status, 0L)));
+    }
+
+    return new JobApplicationSummary(
+        totalCount, statusCounts, overdueNextActionCount, nextActionDueWithinSevenDaysCount);
   }
 
   @Transactional(readOnly = true)

@@ -2,6 +2,7 @@ package io.github.seremark.jobapplicationtracker.applications.web;
 
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplication;
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationService;
+import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationSummary;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -116,6 +117,24 @@ public class JobApplicationController {
       @Valid @ParameterObject @ModelAttribute GetJobApplicationsQuery query) {
     Page<JobApplication> applications = jobApplicationService.query(query.toServiceQuery());
     return ResponseEntity.ok(JobApplicationMapper.toPagedResponse(applications));
+  }
+
+  @GetMapping("/summary")
+  @Operation(
+      summary = "Summarize the application pipeline",
+      description =
+          "Returns total and per-status application counts, plus overdue next actions and next "
+              + "actions due within the next seven days.")
+  @ApiResponse(
+      responseCode = "200",
+      description = "Application pipeline summary returned",
+      content =
+          @Content(
+              mediaType = MediaType.APPLICATION_JSON_VALUE,
+              schema = @Schema(implementation = ApplicationSummaryResponse.class)))
+  public ResponseEntity<ApplicationSummaryResponse> getSummary() {
+    JobApplicationSummary summary = jobApplicationService.getSummary();
+    return ResponseEntity.ok(JobApplicationMapper.toResponse(summary));
   }
 
   @GetMapping("/{id}")
