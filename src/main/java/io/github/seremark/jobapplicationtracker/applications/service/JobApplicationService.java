@@ -61,6 +61,11 @@ public class JobApplicationService {
     return requireById(id).getStatusHistory();
   }
 
+  @Transactional
+  public void delete(UUID id) {
+    jobApplicationRepository.delete(requireById(id));
+  }
+
   @Transactional(readOnly = true)
   public Page<JobApplication> query(JobApplicationQuery query) {
     PageRequest pageRequest = PageRequest.of(query.page() - 1, query.pageSize(), createSort(query));

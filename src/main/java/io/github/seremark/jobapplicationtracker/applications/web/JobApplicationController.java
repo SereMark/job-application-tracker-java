@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -246,5 +247,24 @@ public class JobApplicationController {
             .map(change -> JobApplicationMapper.toResponse(change))
             .toList();
     return ResponseEntity.ok(history);
+  }
+
+  @DeleteMapping("/{id}")
+  @Operation(
+      summary = "Delete a job application",
+      description = "Permanently deletes a job application and its complete status history.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Job application deleted"),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Job application not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class)))
+  })
+  public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    jobApplicationService.delete(id);
+    return ResponseEntity.noContent().build();
   }
 }
