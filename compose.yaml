@@ -1,4 +1,21 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/job_application_tracker
+      SPRING_DATASOURCE_USERNAME: job_application_tracker
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the .env file}
+    ports:
+      - target: 8080
+        published: "${API_PORT:-8081}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:18.4-alpine
     environment:
