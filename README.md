@@ -19,6 +19,13 @@ Copy-Item .env.example .env
 docker compose up -d --wait postgres
 ```
 
+The application reads the same local `.env` file. Starting it applies pending Flyway migrations,
+then validates the JPA mappings against the database schema:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
 PostgreSQL is exposed only on `127.0.0.1`. Stop the container without deleting its data:
 
 ```powershell

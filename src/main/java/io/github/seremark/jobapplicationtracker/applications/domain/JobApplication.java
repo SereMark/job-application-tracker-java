@@ -1,5 +1,15 @@
 package io.github.seremark.jobapplicationtracker.applications.domain;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
@@ -8,8 +18,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.UuidGenerator;
 
-public final class JobApplication {
+@Entity
+@Table(name = "job_applications")
+public class JobApplication {
 
   public static final int COMPANY_NAME_MAX_LENGTH = 200;
   public static final int POSITION_TITLE_MAX_LENGTH = 200;
@@ -19,20 +35,54 @@ public final class JobApplication {
   public static final int NOTES_MAX_LENGTH = 4_000;
   public static final int NEXT_ACTION_DESCRIPTION_MAX_LENGTH = 500;
 
-  private final List<StatusChange> statusHistory = new ArrayList<>();
+  @Id
+  @GeneratedValue
+  @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+  private UUID id;
 
+  @Column(name = "company_name", nullable = false, length = COMPANY_NAME_MAX_LENGTH)
   private String companyName;
+
+  @Column(name = "position_title", nullable = false, length = POSITION_TITLE_MAX_LENGTH)
   private String positionTitle;
+
+  @Column(name = "job_posting_url", length = JOB_POSTING_URL_MAX_LENGTH)
   private URI jobPostingUrl;
+
+  @Column(length = SOURCE_MAX_LENGTH)
   private String source;
+
+  @Column(length = LOCATION_MAX_LENGTH)
   private String location;
+
+  @Column(name = "applied_on")
   private LocalDate appliedOn;
+
+  @Column(length = NOTES_MAX_LENGTH)
   private String notes;
+
+  @Column(name = "next_action_description", length = NEXT_ACTION_DESCRIPTION_MAX_LENGTH)
   private String nextActionDescription;
+
+  @Column(name = "next_action_due_at")
   private Instant nextActionDueAt;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = JobApplicationStatus.DATABASE_VALUE_MAX_LENGTH)
   private JobApplicationStatus status;
-  private final Instant createdAt;
+
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
+
+  @OneToMany(mappedBy = "jobApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("changedAt ASC, id ASC")
+  @OnDelete(action = OnDeleteAction.CASCADE)
+  private List<StatusChange> statusHistory = new ArrayList<>();
+
+  protected JobApplication() {}
 
   private JobApplication(
       JobApplicationDetails details, JobApplicationStatus initialStatus, Instant createdAt) {
@@ -40,7 +90,7 @@ public final class JobApplication {
     status = initialStatus;
     this.createdAt = createdAt;
     updatedAt = createdAt;
-    statusHistory.add(StatusChange.create(null, initialStatus, createdAt, null));
+    statusHistory.add(StatusChange.create(this, null, initialStatus, createdAt, null));
   }
 
   public static JobApplication create(
@@ -79,13 +129,17 @@ public final class JobApplication {
     Instant changedAt = currentTime(clock);
     ensureNotBeforeCurrentState(changedAt);
     StatusChange statusChange =
-        StatusChange.create(status, validatedStatus, changedAt, normalizedNote);
+        StatusChange.create(this, status, validatedStatus, changedAt, normalizedNote);
 
     status = validatedStatus;
     updatedAt = changedAt;
     statusHistory.add(statusChange);
 
     return true;
+  }
+
+  public UUID getId() {
+    return id;
   }
 
   public String getCompanyName() {
