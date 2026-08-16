@@ -28,6 +28,19 @@ final class JobApplicationMapper {
     return request.status() == null ? SAVED : request.status();
   }
 
+  static JobApplicationDetails toDetails(UpdateJobApplicationRequest request) {
+    return new JobApplicationDetails(
+        request.companyName(),
+        request.positionTitle(),
+        request.jobPostingUrl(),
+        request.source(),
+        request.location(),
+        request.appliedOn(),
+        request.notes(),
+        request.nextActionDescription(),
+        request.nextActionDueAt());
+  }
+
   static JobApplicationResponse toResponse(JobApplication application) {
     return new JobApplicationResponse(
         application.getId(),

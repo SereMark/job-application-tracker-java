@@ -1,14 +1,13 @@
 package io.github.seremark.jobapplicationtracker.applications.web.validation;
 
-import io.github.seremark.jobapplicationtracker.applications.web.CreateJobApplicationRequest;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
 public final class NextActionValidator
-    implements ConstraintValidator<ValidNextAction, CreateJobApplicationRequest> {
+    implements ConstraintValidator<ValidNextAction, NextActionFields> {
 
   @Override
-  public boolean isValid(CreateJobApplicationRequest value, ConstraintValidatorContext context) {
+  public boolean isValid(NextActionFields value, ConstraintValidatorContext context) {
     if (value == null) {
       return true;
     }

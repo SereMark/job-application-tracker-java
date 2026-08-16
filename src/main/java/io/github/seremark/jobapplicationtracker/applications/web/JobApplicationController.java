@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -133,6 +134,42 @@ public class JobApplicationController {
   })
   public ResponseEntity<JobApplicationResponse> getById(@PathVariable UUID id) {
     JobApplication application = jobApplicationService.getById(id);
+    return ResponseEntity.ok(JobApplicationMapper.toResponse(application));
+  }
+
+  @PutMapping("/{id}")
+  @Operation(
+      summary = "Replace job application details",
+      description =
+          "Replaces all editable details and leaves the current status unchanged. Omitted "
+              + "optional fields are cleared.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Job application updated",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = JobApplicationResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Request validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Job application not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class)))
+  })
+  public ResponseEntity<JobApplicationResponse> update(
+      @PathVariable UUID id, @Valid @RequestBody UpdateJobApplicationRequest request) {
+    JobApplication application =
+        jobApplicationService.update(id, JobApplicationMapper.toDetails(request));
     return ResponseEntity.ok(JobApplicationMapper.toResponse(application));
   }
 }

@@ -7,7 +7,6 @@ import static io.github.seremark.jobapplicationtracker.applications.domain.JobAp
 import static io.github.seremark.jobapplicationtracker.applications.domain.JobApplication.POSITION_TITLE_MAX_LENGTH;
 import static io.github.seremark.jobapplicationtracker.applications.domain.JobApplication.SOURCE_MAX_LENGTH;
 
-import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationStatus;
 import io.github.seremark.jobapplicationtracker.applications.web.validation.NextActionFields;
 import io.github.seremark.jobapplicationtracker.applications.web.validation.ValidJobPostingUrl;
 import io.github.seremark.jobapplicationtracker.applications.web.validation.ValidNextAction;
@@ -18,10 +17,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 @ValidNextAction
-public record CreateJobApplicationRequest(
+public record UpdateJobApplicationRequest(
     @NotBlank @Size(max = COMPANY_NAME_MAX_LENGTH) String companyName,
     @NotBlank @Size(max = POSITION_TITLE_MAX_LENGTH) String positionTitle,
-    JobApplicationStatus status,
     @ValidJobPostingUrl URI jobPostingUrl,
     @Size(max = SOURCE_MAX_LENGTH) String source,
     @Size(max = LOCATION_MAX_LENGTH) String location,

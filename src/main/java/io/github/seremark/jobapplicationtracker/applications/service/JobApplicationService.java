@@ -38,6 +38,16 @@ public class JobApplicationService {
         .orElseThrow(() -> new JobApplicationNotFoundException(id));
   }
 
+  @Transactional
+  public JobApplication update(UUID id, JobApplicationDetails details) {
+    JobApplication application =
+        jobApplicationRepository
+            .findById(id)
+            .orElseThrow(() -> new JobApplicationNotFoundException(id));
+    application.updateDetails(details, clock);
+    return application;
+  }
+
   @Transactional(readOnly = true)
   public Page<JobApplication> query(JobApplicationQuery query) {
     PageRequest pageRequest = PageRequest.of(query.page() - 1, query.pageSize(), createSort(query));
