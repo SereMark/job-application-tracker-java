@@ -1,5 +1,6 @@
 package io.github.seremark.jobapplicationtracker.applications.web;
 
+import io.github.seremark.jobapplicationtracker.applications.domain.ApplicationResume;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplication;
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationService;
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationSummary;
@@ -11,13 +12,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +35,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
@@ -160,6 +167,80 @@ public class JobApplicationController {
     return ResponseEntity.ok(JobApplicationMapper.toResponse(application));
   }
 
+  @PutMapping(value = "/{id}/resume", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @Operation(
+      summary = "Upload or replace an application resume",
+      description =
+          "Stores one PDF or DOCX resume of at most 5 MB for the job application. Uploading "
+              + "again replaces the previous file.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Resume stored",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApplicationResumeResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Resume validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Job application not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class)))
+  })
+  public ResponseEntity<ApplicationResumeResponse> uploadResume(
+      @PathVariable UUID id, @RequestPart("file") MultipartFile file) throws IOException {
+    ResumeUpload upload = ResumeUpload.from(file);
+    ApplicationResume resume =
+        jobApplicationService.putResume(
+            id, upload.fileName(), upload.contentType(), upload.content());
+    return ResponseEntity.ok(JobApplicationMapper.toResponse(resume));
+  }
+
+  @GetMapping("/{id}/resume")
+  @Operation(
+      summary = "Download an application resume",
+      description =
+          "Downloads the resume stored for the job application using its original file name.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Resume downloaded",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                schema = @Schema(type = "string", format = "binary"))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Application or resume not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ProblemDetail.class)))
+  })
+  public ResponseEntity<byte[]> downloadResume(@PathVariable UUID id) {
+    ApplicationResume resume = jobApplicationService.getResume(id);
+    ContentDisposition contentDisposition =
+        ContentDisposition.attachment()
+            .filename(resume.getFileName(), StandardCharsets.UTF_8)
+            .build();
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType(resume.getContentType()))
+        .contentLength(resume.getSize())
+        .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+        .lastModified(resume.getUploadedAt())
+        .body(resume.getContent());
+  }
+
   @PutMapping("/{id}")
   @Operation(
       summary = "Replace job application details",
@@ -271,7 +352,7 @@ public class JobApplicationController {
   @DeleteMapping("/{id}")
   @Operation(
       summary = "Delete a job application",
-      description = "Permanently deletes a job application and its complete status history.")
+      description = "Permanently deletes a job application, its status history, and its resume.")
   @ApiResponses({
     @ApiResponse(responseCode = "204", description = "Job application deleted"),
     @ApiResponse(

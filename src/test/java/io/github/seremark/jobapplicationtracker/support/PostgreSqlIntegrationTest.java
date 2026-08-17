@@ -1,5 +1,6 @@
 package io.github.seremark.jobapplicationtracker.support;
 
+import io.github.seremark.jobapplicationtracker.applications.persistence.ApplicationResumeRepository;
 import io.github.seremark.jobapplicationtracker.applications.persistence.JobApplicationRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,13 +24,15 @@ public abstract class PostgreSqlIntegrationTest {
 
   @Autowired protected JdbcTemplate jdbcTemplate;
 
+  @Autowired protected ApplicationResumeRepository applicationResumeRepository;
+
   @Autowired protected JobApplicationRepository jobApplicationRepository;
 
   @Autowired protected AdjustableClock testClock;
 
   @BeforeEach
   protected final void resetIntegrationTestState() {
-    jdbcTemplate.execute("TRUNCATE TABLE status_changes, job_applications");
+    jdbcTemplate.execute("TRUNCATE TABLE application_resumes, status_changes, job_applications");
     testClock.setInstant(DEFAULT_TEST_INSTANT);
   }
 }

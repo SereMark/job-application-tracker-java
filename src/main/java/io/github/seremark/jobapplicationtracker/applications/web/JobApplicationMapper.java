@@ -2,6 +2,7 @@ package io.github.seremark.jobapplicationtracker.applications.web;
 
 import static io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationStatus.SAVED;
 
+import io.github.seremark.jobapplicationtracker.applications.domain.ApplicationResume;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplication;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationDetails;
 import io.github.seremark.jobapplicationtracker.applications.domain.JobApplicationStatus;
@@ -59,6 +60,11 @@ final class JobApplicationMapper {
         application.getNextActionDueAt(),
         application.getCreatedAt(),
         application.getUpdatedAt());
+  }
+
+  static ApplicationResumeResponse toResponse(ApplicationResume resume) {
+    return new ApplicationResumeResponse(
+        resume.getFileName(), resume.getContentType(), resume.getSize(), resume.getUploadedAt());
   }
 
   static PagedJobApplicationsResponse toPagedResponse(Page<JobApplication> applications) {

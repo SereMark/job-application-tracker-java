@@ -39,7 +39,11 @@ class JobApplicationTrackerApplicationIT extends PostgreSqlIntegrationTest {
             jdbcTemplate.queryForObject("SELECT current_setting('server_version')", String.class))
         .isEqualTo("18.4");
     assertThat(currentMigration).isNotNull();
-    assertThat(currentMigration.getVersion().getVersion()).isEqualTo("2");
+    assertThat(currentMigration.getVersion().getVersion()).isEqualTo("3");
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT to_regclass('public.application_resumes') IS NOT NULL", Boolean.class))
+        .isTrue();
     assertThat(
             jdbcTemplate.queryForList(
                 "SELECT indexname FROM pg_indexes WHERE schemaname = 'public'", String.class))

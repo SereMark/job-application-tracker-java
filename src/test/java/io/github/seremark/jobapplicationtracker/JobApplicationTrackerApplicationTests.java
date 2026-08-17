@@ -3,6 +3,7 @@ package io.github.seremark.jobapplicationtracker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.github.seremark.jobapplicationtracker.applications.persistence.ApplicationResumeRepository;
 import io.github.seremark.jobapplicationtracker.applications.persistence.JobApplicationRepository;
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationService;
 import io.github.seremark.jobapplicationtracker.applications.web.JobApplicationController;
@@ -31,6 +32,8 @@ class JobApplicationTrackerApplicationTests {
                   + ","
                   + FlywayAutoConfiguration.class.getName(),
               "management.endpoint.health.validate-group-membership=false")
+          .withBean(
+              ApplicationResumeRepository.class, () -> mock(ApplicationResumeRepository.class))
           .withBean(JobApplicationRepository.class, () -> mock(JobApplicationRepository.class))
           .withUserConfiguration(JobApplicationTrackerApplication.class);
 

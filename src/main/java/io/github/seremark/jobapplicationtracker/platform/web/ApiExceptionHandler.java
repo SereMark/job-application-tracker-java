@@ -1,5 +1,7 @@
 package io.github.seremark.jobapplicationtracker.platform.web;
 
+import io.github.seremark.jobapplicationtracker.applications.service.ApplicationResumeNotFoundException;
+import io.github.seremark.jobapplicationtracker.applications.service.InvalidResumeFileException;
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationNotFoundException;
 import io.github.seremark.jobapplicationtracker.applications.service.JobApplicationStatusConflictException;
 import java.util.ArrayList;
@@ -49,6 +51,29 @@ public final class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     return handleExceptionInternal(
         exception, problemDetail, new HttpHeaders(), HttpStatus.CONFLICT, request);
+  }
+
+  @ExceptionHandler(ApplicationResumeNotFoundException.class)
+  ResponseEntity<Object> handleApplicationResumeNotFound(
+      ApplicationResumeNotFoundException exception, WebRequest request) {
+    ProblemDetail problemDetail =
+        createProblemDetail(
+            exception, HttpStatus.NOT_FOUND, exception.getMessage(), null, null, request);
+    problemDetail.setTitle("Application resume not found");
+
+    return handleExceptionInternal(
+        exception, problemDetail, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+  }
+
+  @ExceptionHandler(InvalidResumeFileException.class)
+  ResponseEntity<Object> handleInvalidResumeFile(
+      InvalidResumeFileException exception, WebRequest request) {
+    return handleValidationException(
+        exception,
+        new HttpHeaders(),
+        HttpStatus.BAD_REQUEST,
+        request,
+        Map.of("file", List.of(exception.getMessage())));
   }
 
   @Override

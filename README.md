@@ -10,6 +10,7 @@ Flyway, Swagger UI, Docker Compose, JUnit, Testcontainers, and GitHub Actions.
 ## Features
 
 - Create, view, update, and permanently delete job applications.
+- Upload, replace, and download one PDF or DOCX resume (CV) per application.
 - Track `Saved`, `Applied`, `Screening`, `Interview`, `Offer`, `Rejected`, and
   `Withdrawn` states with a complete status history.
 - Search, filter, sort, and paginate applications.
@@ -89,6 +90,21 @@ Content-Type: application/json
 }
 ```
 
+Upload or replace the resume used for an application (maximum 5 MB):
+
+```bash
+curl --request PUT \
+  --form "file=@/path/to/resume.pdf" \
+  http://localhost:8081/api/applications/{id}/resume
+```
+
+Download the stored resume with its original file name:
+
+```bash
+curl --remote-header-name --remote-name \
+  http://localhost:8081/api/applications/{id}/resume
+```
+
 ### Endpoints
 
 | Method | Route | Purpose |
@@ -97,9 +113,11 @@ Content-Type: application/json
 | `GET` | `/api/applications/{id}` | Get one application |
 | `GET` | `/api/applications` | Search, filter, sort, and paginate applications |
 | `PUT` | `/api/applications/{id}` | Replace editable details without changing status |
+| `PUT` | `/api/applications/{id}/resume` | Upload or replace the PDF/DOCX resume used for an application |
+| `GET` | `/api/applications/{id}/resume` | Download the stored resume |
 | `PATCH` | `/api/applications/{id}/status` | Change status and append a history entry |
 | `GET` | `/api/applications/{id}/status-history` | Get status history in chronological order |
-| `DELETE` | `/api/applications/{id}` | Delete an application and its status history |
+| `DELETE` | `/api/applications/{id}` | Delete an application, status history, and resume |
 | `GET` | `/api/applications/summary` | Get pipeline and next-action counts |
 | `GET` | `/actuator/health/liveness` | Check whether the API process is running |
 | `GET` | `/actuator/health/readiness` | Check whether the API can reach PostgreSQL |
@@ -159,9 +177,11 @@ Key decisions:
 
 Flyway owns the database schema through versioned
 [SQL migrations](src/main/resources/db/migration). PostgreSQL constraints independently protect
-valid statuses and next-action pairs, while foreign-key cascade deletion removes status history
-with its parent application. Hibernate validates the schema at startup rather than creating or
-altering it.
+valid statuses and next-action pairs. An optional `ApplicationResume` uses the application id as
+both its primary key and cascading foreign key. Keeping its binary content in a separate table
+prevents ordinary application queries from loading files. Foreign-key cascade deletion removes
+status history and the resume with their parent application. Hibernate validates the schema at
+startup rather than creating or altering it.
 
 ## Local development
 
@@ -232,6 +252,8 @@ The Compose stack is intended for local, single-user use:
 - The application image runs as a non-root user.
 - The API does not include authentication, user isolation, TLS termination, or production secret
   management and should not be exposed to an untrusted network.
+- Resumes can contain sensitive personal data. The upload feature is intended for this local,
+  single-user setup until authentication and access control are added.
 
 ## Possible extensions
 
